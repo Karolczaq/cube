@@ -1,9 +1,8 @@
-import React from "react";
 import ThreeScene from "./components/CubeRenderer";
 
 const App = () => {
   return (
-    <div>
+    <div className="App">
       <ThreeScene />
     </div>
   );
