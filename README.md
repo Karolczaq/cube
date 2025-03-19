@@ -1,54 +1,32 @@
-# React + TypeScript + Vite
+# Simple thermal conductivity simulation
+*Made using Three.js* <br>
+The animation is smooth up to 6x6x6 cube. For the more discretized cube you can use the code in HeatSimulation.tsx to simulate it further, but without the animation, because it's unusable for those cubes.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Running it locally:
+1. pnpm install
+2. pnpm dev
 
-Currently, two official plugins are available:
+# Explanation of the calculation:
+We are considering the heating process of a cube with density ρ -- modeling how heat propagates throughout the interior of the cube -- where different parts can have different temperatures at a given moment. For this purpose, we divide the cube into small cubes with dimensions Δx, Δy, Δz (where Δy = Δx, Δz = Δx). The function T(x,y,z,t) describes the temperature of a small cube with its center at point x,y,z at time t. We assume that the temperature of each small cube is constant within that cube, although different cubes may have different temperatures. The change in temperature of a small cube over time Δt is derived from the specific heat equation c:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+$$\left[\frac{T(x,y,z,t+\Delta t)-T(x,y,z,t)}{\Delta t}\right]c\rho\Delta x\Delta y\Delta z=\Delta Q     (1)$$
 
-## Expanding the ESLint configuration
+where ΔQ represents the net heat flow through the surface of the small cube between time t and t+Δt. This heat can be written as the sum of contributions from walls perpendicular to the x, y, and z axes:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+$$\Delta Q=\Delta Q_{x,1}+\Delta Q_{y,1}+\Delta Q_{z,1}+\Delta Q_{x,2}+\Delta Q_{y,2}+\Delta Q_{z,2}$$
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+The amount of heat transferred through a wall with surface area S is expressed by the heat conduction equation (see: [Heat Conduction](https://en.wikipedia.org/wiki/Thermal_conduction)):
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+$$\Delta Q=k\frac{S\Delta T}{d}\Delta t,     (2)$$
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+where d represents the thickness of the barrier, which in our case is one of the distances Δx, Δy, Δz. For the two walls in the x direction:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+$$\Delta Q_{x,1}=k\cdot\frac{\Delta y\Delta z}{\Delta x}[T(x,y,z,t)-T(x-\Delta x,y,z,t)]\Delta t     (3)$$
+
+$$\Delta Q_{x,2}=k\cdot\frac{\Delta y\Delta z}{\Delta x}[T(x,y,z,t)-T(x+\Delta x,y,z,t)]\Delta t     (4)$$
+
+where ΔyΔz is the surface area where the cube contacts the adjacent surface. After equating equations (1) and (3) and dividing by ΔxΔyΔzΔt, we obtain:
+
+$$T(x,y,z,t+\Delta t)-T(x,y,z,t)=\frac{k}{c\rho(\Delta x)^2}[-T(x-\Delta x,y,z,t)-T(x,y-\Delta y,z,t)-T(x,y,z-\Delta z,t)     (5)$$
+
+$$+6T(x,y,z,t)-T(x+\Delta x,y,z,t)-T(x,y+\Delta y,z,t)-T(x,y,z+\Delta z,t)]\Delta t     (6)$$
