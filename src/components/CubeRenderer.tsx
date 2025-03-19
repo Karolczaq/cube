@@ -199,6 +199,9 @@ const CubeRenderer: React.FC = () => {
         return newTimePassed;
       });
 
+      const center = new THREE.Vector3(0, 0, 0);
+      const cameraDistance = Math.sqrt(camera.position.lengthSq());
+
       let index = 0;
       for (let x = 1; x < totalCubes - 1; x++) {
         for (let y = 1; y < totalCubes - 1; y++) {
@@ -206,25 +209,43 @@ const CubeRenderer: React.FC = () => {
             const cube = cubes[index];
             const temp = temperatureGrid[x][y][z];
 
-            (cube.material as THREE.MeshBasicMaterial).color =
-              temperatureToColor(temp);
+            const cubePosition = new THREE.Vector3(
+              x * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
+              y * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
+              z * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2
+            );
+            const distance = cubePosition.distanceTo(center);
 
-            for (let j = 0; j < 6; j++) {
-              const label = labels[index * 6 + j];
-              const material = label.material as THREE.MeshBasicMaterial;
-              const canvas = material.map?.image as HTMLCanvasElement;
-              const context = canvas?.getContext("2d");
-              if (context) {
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                context.fillText(
-                  `${temp.toFixed(4)}°C`,
-                  canvas.width / 2,
-                  canvas.height / 2
-                );
-                material.map!.needsUpdate = true;
+            if (distance <= cameraDistance - 2) {
+              cube.visible = true;
+              (cube.material as THREE.MeshBasicMaterial).color =
+                temperatureToColor(temp);
+
+              for (let j = 0; j < 6; j++) {
+                const label = labels[index * 6 + j];
+                label.visible = true;
+
+                const material = label.material as THREE.MeshBasicMaterial;
+                const canvas = material.map?.image as HTMLCanvasElement;
+                const context = canvas?.getContext("2d");
+                if (context) {
+                  context.clearRect(0, 0, canvas.width, canvas.height);
+                  context.fillText(
+                    `${temp.toFixed(4)}°C`,
+                    canvas.width / 2,
+                    canvas.height / 2
+                  );
+                  material.map!.needsUpdate = true;
+                }
+              }
+            } else {
+              cube.visible = false;
+
+              for (let j = 0; j < 6; j++) {
+                const label = labels[index * 6 + j];
+                label.visible = false;
               }
             }
-
             index++;
           }
         }
