@@ -12,19 +12,14 @@ export const generateTemperatureGrid = (
 export const updateTemperatureGrid = (
   grid: number[][][],
   totalCubes: number,
-  alpha: number // Precomputed alpha
+  alpha: number
 ): number[][][] => {
-  // Create a new grid to store updated temperatures
   const newGrid = JSON.parse(JSON.stringify(grid));
-
-  // Iterate over all inner cubes (excluding boundaries)
   for (let x = 1; x < totalCubes - 1; x++) {
     for (let y = 1; y < totalCubes - 1; y++) {
       for (let z = 1; z < totalCubes - 1; z++) {
-        // Current temperature
         const T = grid[x][y][z];
 
-        // Neighboring temperatures
         const T_x_minus = grid[x - 1][y][z];
         const T_x_plus = grid[x + 1][y][z];
         const T_y_minus = grid[x][y - 1][z];
@@ -32,7 +27,6 @@ export const updateTemperatureGrid = (
         const T_z_minus = grid[x][y][z - 1];
         const T_z_plus = grid[x][y][z + 1];
 
-        // Update temperature using the heat transfer formula
         newGrid[x][y][z] =
           T +
           alpha *
@@ -47,6 +41,5 @@ export const updateTemperatureGrid = (
     }
   }
 
-  // Return the updated grid
   return newGrid;
 };

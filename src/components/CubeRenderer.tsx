@@ -7,27 +7,24 @@ import {
   updateTemperatureGrid,
 } from "./HeatSimulation";
 
-const RubiksCubeWithTemperature: React.FC = () => {
+const CubeRenderer: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
 
-  // State for user-controlled parameters
   const [initialCubeTemp, setInitialCubeTemp] = useState(25);
   const [initialWaterTemp, setInitialWaterTemp] = useState(100);
-  const [timeStep, setTimeStep] = useState(0.1); // Time step for simulation
-  const [totalCubes, setTotalCubes] = useState(7); // Number of smaller cubes along one dimension
-  const [isRunning, setIsRunning] = useState(false); // State to control simulation
-  const [timePassed, setTimePassed] = useState(0); // Time passed since simulation start
+  const [timeStep, setTimeStep] = useState(0.1);
+  const [totalCubes, setTotalCubes] = useState(7);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timePassed, setTimePassed] = useState(0);
 
-  // State for thermal properties
-  const [thermalConductivity, setThermalConductivity] = useState(2); // W/(m·K)
-  const [density, setDensity] = useState(2400); // kg/m³
-  const [specificHeat, setSpecificHeat] = useState(1000); // J/(kg·K)
-  const [cubeLength, setCubeLength] = useState(1); // m
+  const [thermalConductivity, setThermalConductivity] = useState(2);
+  const [density, setDensity] = useState(2400);
+  const [specificHeat, setSpecificHeat] = useState(1000);
+  const [cubeLength, setCubeLength] = useState(1);
 
   useEffect(() => {
     const mount = mountRef.current;
 
-    // Scene, Camera, and Renderer setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -39,65 +36,52 @@ const RubiksCubeWithTemperature: React.FC = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     mount?.appendChild(renderer.domElement);
 
-    // Camera positioning
     camera.position.z = totalCubes;
 
-    // OrbitControls setup
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.target.set(0, 0, 0);
     controls.update();
 
-    // Cube parameters
-    const cubeSize = 1; // Fixed size of each smaller cube
-    const gap = 0.05; // Gap between cubes
+    const cubeSize = 1;
+    const gap = 0.05;
 
-    // Precompute alpha once at the beginning of the simulation
     const alpha =
       (thermalConductivity * timeStep) /
       (density * specificHeat * (cubeSize / totalCubes) ** 2);
 
     console.log(alpha);
 
-    // Function to map temperature to a color
     const temperatureToColor = (temp: number) => {
-      const t = Math.min(Math.max(temp / 200, 0), 1); // Normalize temp to [0, 1]
-      const r = t; // Red increases with temperature
-      const g = 0; // Green remains constant
-      const b = 1 - t; // Blue decreases with temperature
+      const t = Math.min(Math.max(temp / 200, 0), 1);
+      const r = t;
+      const g = 0;
+      const b = 1 - t;
       return new THREE.Color(r, g, b);
     };
 
-    // Function to create a text texture for temperature
     const createTextTexture = (temp: number) => {
       const canvas = document.createElement("canvas");
-      const size = 512; // Increase canvas size for better resolution
+      const size = 512;
       canvas.width = size;
       canvas.height = size;
       const context = canvas.getContext("2d");
 
       if (context) {
-        // Transparent background
         context.clearRect(0, 0, size, size);
-
-        // Text color and style
-        context.fillStyle = "#000000"; // Black text
-        context.font = "bold 64px Arial"; // Smaller font size for better fit
+        context.fillStyle = "#000000";
+        context.font = "bold 64px Arial";
         context.textAlign = "center";
         context.textBaseline = "middle";
-
-        // Draw the temperature with fractional part
         context.fillText(`${temp.toFixed(2)}°C`, size / 2, size / 2);
       }
 
       return new THREE.CanvasTexture(canvas);
     };
 
-    // Generate the initial temperature grid
     let temperatureGrid = generateTemperatureGrid(totalCubes, initialCubeTemp);
 
-    // Set boundary temperatures
     for (let x = 0; x < totalCubes; x++) {
       for (let y = 0; y < totalCubes; y++) {
         for (let z = 0; z < totalCubes; z++) {
@@ -115,7 +99,6 @@ const RubiksCubeWithTemperature: React.FC = () => {
       }
     }
 
-    // Create smaller cubes with temperature-based coloring and labels
     const cubes: THREE.Mesh[] = [];
     const labels: THREE.Mesh[] = [];
     for (let x = 0; x < totalCubes; x++) {
@@ -138,14 +121,12 @@ const RubiksCubeWithTemperature: React.FC = () => {
           });
           const smallCube = new THREE.Mesh(geometry, material);
 
-          // Position the smaller cubes
           smallCube.position.set(
             x * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
             y * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
             z * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2
           );
 
-          // Create and attach labels for each face
           const tempTexture = createTextTexture(temperatureGrid[x][y][z]);
           const labelMaterial = new THREE.MeshBasicMaterial({
             map: tempTexture,
@@ -153,45 +134,39 @@ const RubiksCubeWithTemperature: React.FC = () => {
           });
           const labelGeometry = new THREE.PlaneGeometry(cubeSize, cubeSize);
 
-          // Front
           const frontLabel = new THREE.Mesh(labelGeometry, labelMaterial);
           frontLabel.position.copy(smallCube.position);
-          frontLabel.position.z += cubeSize / 2 + 0.01; // Slightly offset in front
+          frontLabel.position.z += cubeSize / 2 + 0.01;
           scene.add(frontLabel);
 
-          // Back
           const backLabel = new THREE.Mesh(labelGeometry, labelMaterial);
           backLabel.position.copy(smallCube.position);
-          backLabel.position.z -= cubeSize / 2 + 0.01; // Slightly offset behind
-          backLabel.rotation.y = Math.PI; // Rotate to face outward
+          backLabel.position.z -= cubeSize / 2 + 0.01;
+          backLabel.rotation.y = Math.PI;
           scene.add(backLabel);
 
-          // Top
           const topLabel = new THREE.Mesh(labelGeometry, labelMaterial);
           topLabel.position.copy(smallCube.position);
-          topLabel.position.y += cubeSize / 2 + 0.01; // Slightly offset above
-          topLabel.rotation.x = -Math.PI / 2; // Rotate to face upward
+          topLabel.position.y += cubeSize / 2 + 0.01;
+          topLabel.rotation.x = -Math.PI / 2;
           scene.add(topLabel);
 
-          // Bottom
           const bottomLabel = new THREE.Mesh(labelGeometry, labelMaterial);
           bottomLabel.position.copy(smallCube.position);
-          bottomLabel.position.y -= cubeSize / 2 + 0.01; // Slightly offset below
-          bottomLabel.rotation.x = Math.PI / 2; // Rotate to face downward
+          bottomLabel.position.y -= cubeSize / 2 + 0.01;
+          bottomLabel.rotation.x = Math.PI / 2;
           scene.add(bottomLabel);
 
-          // Left
           const leftLabel = new THREE.Mesh(labelGeometry, labelMaterial);
           leftLabel.position.copy(smallCube.position);
-          leftLabel.position.x -= cubeSize / 2 + 0.01; // Slightly offset to the left
-          leftLabel.rotation.y = -Math.PI / 2; // Rotate to face outward
+          leftLabel.position.x -= cubeSize / 2 + 0.01;
+          leftLabel.rotation.y = -Math.PI / 2;
           scene.add(leftLabel);
 
-          // Right
           const rightLabel = new THREE.Mesh(labelGeometry, labelMaterial);
           rightLabel.position.copy(smallCube.position);
-          rightLabel.position.x += cubeSize / 2 + 0.01; // Slightly offset to the right
-          rightLabel.rotation.y = Math.PI / 2; // Rotate to face outward
+          rightLabel.position.x += cubeSize / 2 + 0.01;
+          rightLabel.rotation.y = Math.PI / 2;
           scene.add(rightLabel);
 
           cubes.push(smallCube);
@@ -208,13 +183,11 @@ const RubiksCubeWithTemperature: React.FC = () => {
       }
     }
 
-    // Animation loop
     const animate = () => {
-      if (!isRunning) return; // Stop the simulation if not running
+      if (!isRunning) return;
 
       controls.update();
 
-      // Update the temperature grid
       temperatureGrid = updateTemperatureGrid(
         temperatureGrid,
         totalCubes,
@@ -226,7 +199,6 @@ const RubiksCubeWithTemperature: React.FC = () => {
         return newTimePassed;
       });
 
-      // Update cube temperatures and labels
       let index = 0;
       for (let x = 1; x < totalCubes - 1; x++) {
         for (let y = 1; y < totalCubes - 1; y++) {
@@ -234,15 +206,13 @@ const RubiksCubeWithTemperature: React.FC = () => {
             const cube = cubes[index];
             const temp = temperatureGrid[x][y][z];
 
-            // Update color
             (cube.material as THREE.MeshBasicMaterial).color =
               temperatureToColor(temp);
 
-            // Update label textures for all six sides
             for (let j = 0; j < 6; j++) {
               const label = labels[index * 6 + j];
-              const material = label.material as THREE.MeshBasicMaterial; // Explicitly cast to MeshBasicMaterial
-              const canvas = material.map?.image as HTMLCanvasElement; // Safely access the map property
+              const material = label.material as THREE.MeshBasicMaterial;
+              const canvas = material.map?.image as HTMLCanvasElement;
               const context = canvas?.getContext("2d");
               if (context) {
                 context.clearRect(0, 0, canvas.width, canvas.height);
@@ -251,7 +221,7 @@ const RubiksCubeWithTemperature: React.FC = () => {
                   canvas.width / 2,
                   canvas.height / 2
                 );
-                material.map!.needsUpdate = true; // Use non-null assertion operator
+                material.map!.needsUpdate = true;
               }
             }
 
@@ -259,14 +229,10 @@ const RubiksCubeWithTemperature: React.FC = () => {
           }
         }
       }
-
-      // Render the scene
       renderer.render(scene, camera);
     };
 
     renderer.setAnimationLoop(animate);
-
-    // Cleanup on unmount
     return () => {
       renderer.setAnimationLoop(null);
       controls.dispose();
@@ -277,7 +243,7 @@ const RubiksCubeWithTemperature: React.FC = () => {
     initialWaterTemp,
     timeStep,
     totalCubes,
-    isRunning, // Re-run effect when simulation state changes
+    isRunning,
     density,
     specificHeat,
     thermalConductivity,
@@ -285,7 +251,6 @@ const RubiksCubeWithTemperature: React.FC = () => {
 
   return (
     <div>
-      {/* Menu for user input */}
       <div
         style={{
           position: "absolute",
@@ -324,8 +289,8 @@ const RubiksCubeWithTemperature: React.FC = () => {
           Cube Discretization: {totalCubes - 2}
           <input
             type="range"
-            min="3"
-            max="20"
+            min="1"
+            max="9"
             value={totalCubes - 2}
             onChange={(e) => setTotalCubes(Number(e.target.value) + 2)}
           />
@@ -395,7 +360,7 @@ const RubiksCubeWithTemperature: React.FC = () => {
           onClick={() => {
             setIsRunning((prev) => {
               if (!prev) {
-                setTimePassed(0); // Reset timePassed when starting the simulation
+                setTimePassed(0);
               }
               return !prev;
             });
@@ -405,11 +370,9 @@ const RubiksCubeWithTemperature: React.FC = () => {
         </button>
         <p>Time Elapsed: {timePassed.toFixed(1)} s </p>
       </div>
-
-      {/* 3D Scene */}
       <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />
     </div>
   );
 };
 
-export default RubiksCubeWithTemperature;
+export default CubeRenderer;
