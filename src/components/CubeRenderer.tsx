@@ -21,6 +21,7 @@ const CubeRenderer: React.FC = () => {
   const [density, setDensity] = useState(2400);
   const [specificHeat, setSpecificHeat] = useState(1000);
   const [cubeLength, setCubeLength] = useState(1);
+  const [middleTemp, setMiddleTemp] = useState(0);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -37,6 +38,7 @@ const CubeRenderer: React.FC = () => {
     mount?.appendChild(renderer.domElement);
 
     camera.position.z = totalCubes;
+    const middle = Math.floor((totalCubes - 2) / 2);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -46,12 +48,32 @@ const CubeRenderer: React.FC = () => {
 
     const cubeSize = 1;
     const gap = 0.05;
+    const renderedCubes = totalCubes - 2;
 
     const alpha =
       (thermalConductivity * timeStep) /
-      (density * specificHeat * (cubeSize / totalCubes) ** 2);
+      (density * specificHeat * (cubeLength / (totalCubes - 2)) ** 2);
 
     console.log(alpha);
+
+    // const createTextTexture = (text: string) => {
+    //   const canvas = document.createElement("canvas");
+    //   const size = 256; // Canvas size for better resolution
+    //   canvas.width = size;
+    //   canvas.height = size;
+    //   const context = canvas.getContext("2d");
+
+    //   if (context) {
+    //     context.clearRect(0, 0, size, size);
+    //     context.fillStyle = "black";
+    //     context.font = "bold 48px Arial";
+    //     context.textAlign = "center";
+    //     context.textBaseline = "middle";
+    //     context.fillText(text, size / 2, size / 2);
+    //   }
+
+    //   return new THREE.CanvasTexture(canvas);
+    // };
 
     const temperatureToColor = (temp: number) => {
       const t = Math.min(Math.max(temp / 200, 0), 1);
@@ -59,25 +81,6 @@ const CubeRenderer: React.FC = () => {
       const g = 0;
       const b = 1 - t;
       return new THREE.Color(r, g, b);
-    };
-
-    const createTextTexture = (temp: number) => {
-      const canvas = document.createElement("canvas");
-      const size = 512;
-      canvas.width = size;
-      canvas.height = size;
-      const context = canvas.getContext("2d");
-
-      if (context) {
-        context.clearRect(0, 0, size, size);
-        context.fillStyle = "#000000";
-        context.font = "bold 64px Arial";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(`${temp.toFixed(2)}°C`, size / 2, size / 2);
-      }
-
-      return new THREE.CanvasTexture(canvas);
     };
 
     let temperatureGrid = generateTemperatureGrid(totalCubes, initialCubeTemp);
@@ -98,90 +101,35 @@ const CubeRenderer: React.FC = () => {
         }
       }
     }
-
-    const cubes: THREE.Mesh[] = [];
-    const labels: THREE.Mesh[] = [];
-    for (let x = 0; x < totalCubes; x++) {
-      for (let y = 0; y < totalCubes; y++) {
-        for (let z = 0; z < totalCubes; z++) {
-          if (
-            x === 0 ||
-            y === 0 ||
-            z === 0 ||
-            x === totalCubes - 1 ||
-            y === totalCubes - 1 ||
-            z === totalCubes - 1
-          ) {
-            continue;
-          }
-
-          const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-          const material = new THREE.MeshBasicMaterial({
-            color: temperatureToColor(temperatureGrid[x][y][z]),
-          });
-          const smallCube = new THREE.Mesh(geometry, material);
-
-          smallCube.position.set(
-            x * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
-            y * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
-            z * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2
+    const material = new THREE.MeshBasicMaterial();
+    const instancedMesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+      material,
+      renderedCubes ** 3
+    );
+    let index = 0;
+    for (let x = 0; x < renderedCubes; x++) {
+      for (let y = 0; y < renderedCubes; y++) {
+        for (let z = 0; z < renderedCubes; z++) {
+          const matrix = new THREE.Matrix4();
+          matrix.setPosition(
+            x * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2,
+            y * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2,
+            z * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2
           );
+          instancedMesh.setMatrixAt(index, matrix);
 
-          const tempTexture = createTextTexture(temperatureGrid[x][y][z]);
-          const labelMaterial = new THREE.MeshBasicMaterial({
-            map: tempTexture,
-            transparent: true,
-          });
-          const labelGeometry = new THREE.PlaneGeometry(cubeSize, cubeSize);
-
-          const frontLabel = new THREE.Mesh(labelGeometry, labelMaterial);
-          frontLabel.position.copy(smallCube.position);
-          frontLabel.position.z += cubeSize / 2 + 0.01;
-          scene.add(frontLabel);
-
-          const backLabel = new THREE.Mesh(labelGeometry, labelMaterial);
-          backLabel.position.copy(smallCube.position);
-          backLabel.position.z -= cubeSize / 2 + 0.01;
-          backLabel.rotation.y = Math.PI;
-          scene.add(backLabel);
-
-          const topLabel = new THREE.Mesh(labelGeometry, labelMaterial);
-          topLabel.position.copy(smallCube.position);
-          topLabel.position.y += cubeSize / 2 + 0.01;
-          topLabel.rotation.x = -Math.PI / 2;
-          scene.add(topLabel);
-
-          const bottomLabel = new THREE.Mesh(labelGeometry, labelMaterial);
-          bottomLabel.position.copy(smallCube.position);
-          bottomLabel.position.y -= cubeSize / 2 + 0.01;
-          bottomLabel.rotation.x = Math.PI / 2;
-          scene.add(bottomLabel);
-
-          const leftLabel = new THREE.Mesh(labelGeometry, labelMaterial);
-          leftLabel.position.copy(smallCube.position);
-          leftLabel.position.x -= cubeSize / 2 + 0.01;
-          leftLabel.rotation.y = -Math.PI / 2;
-          scene.add(leftLabel);
-
-          const rightLabel = new THREE.Mesh(labelGeometry, labelMaterial);
-          rightLabel.position.copy(smallCube.position);
-          rightLabel.position.x += cubeSize / 2 + 0.01;
-          rightLabel.rotation.y = Math.PI / 2;
-          scene.add(rightLabel);
-
-          cubes.push(smallCube);
-          labels.push(
-            frontLabel,
-            backLabel,
-            topLabel,
-            bottomLabel,
-            leftLabel,
-            rightLabel
+          const color = temperatureToColor(
+            temperatureGrid[x + 1][y + 1][z + 1]
           );
-          scene.add(smallCube);
+          instancedMesh.setColorAt(index, color);
+
+          index++;
         }
       }
     }
+    instancedMesh.instanceColor!.needsUpdate = true;
+    scene.add(instancedMesh);
 
     const animate = () => {
       if (!isRunning) return;
@@ -193,63 +141,24 @@ const CubeRenderer: React.FC = () => {
         totalCubes,
         alpha
       );
+      setMiddleTemp(temperatureGrid[middle][middle][middle]);
       setTimePassed((prev) => {
         const newTimePassed = prev + timeStep;
-        console.log(`Time passed: ${newTimePassed.toFixed(2)}s`);
         return newTimePassed;
       });
-
-      const center = new THREE.Vector3(0, 0, 0);
-      const cameraDistance = Math.sqrt(camera.position.lengthSq());
-
       let index = 0;
-      for (let x = 1; x < totalCubes - 1; x++) {
-        for (let y = 1; y < totalCubes - 1; y++) {
-          for (let z = 1; z < totalCubes - 1; z++) {
-            const cube = cubes[index];
-            const temp = temperatureGrid[x][y][z];
-
-            const cubePosition = new THREE.Vector3(
-              x * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
-              y * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2,
-              z * (cubeSize + gap) - ((cubeSize + gap) * (totalCubes - 1)) / 2
+      for (let x = 0; x < renderedCubes; x++) {
+        for (let y = 0; y < renderedCubes; y++) {
+          for (let z = 0; z < renderedCubes; z++) {
+            const color = temperatureToColor(
+              temperatureGrid[x + 1][y + 1][z + 1]
             );
-            const distance = cubePosition.distanceTo(center);
-
-            if (distance <= cameraDistance - 2) {
-              cube.visible = true;
-              (cube.material as THREE.MeshBasicMaterial).color =
-                temperatureToColor(temp);
-
-              for (let j = 0; j < 6; j++) {
-                const label = labels[index * 6 + j];
-                label.visible = true;
-
-                const material = label.material as THREE.MeshBasicMaterial;
-                const canvas = material.map?.image as HTMLCanvasElement;
-                const context = canvas?.getContext("2d");
-                if (context) {
-                  context.clearRect(0, 0, canvas.width, canvas.height);
-                  context.fillText(
-                    `${temp.toFixed(4)}°C`,
-                    canvas.width / 2,
-                    canvas.height / 2
-                  );
-                  material.map!.needsUpdate = true;
-                }
-              }
-            } else {
-              cube.visible = false;
-
-              for (let j = 0; j < 6; j++) {
-                const label = labels[index * 6 + j];
-                label.visible = false;
-              }
-            }
+            instancedMesh.setColorAt(index, color);
             index++;
           }
         }
       }
+      instancedMesh.instanceColor!.needsUpdate = true;
       renderer.render(scene, camera);
     };
 
@@ -268,6 +177,7 @@ const CubeRenderer: React.FC = () => {
     density,
     specificHeat,
     thermalConductivity,
+    cubeLength,
   ]);
 
   return (
@@ -311,7 +221,7 @@ const CubeRenderer: React.FC = () => {
           <input
             type="range"
             min="1"
-            max="9"
+            max="30"
             value={totalCubes - 2}
             onChange={(e) => setTotalCubes(Number(e.target.value) + 2)}
           />
@@ -321,7 +231,7 @@ const CubeRenderer: React.FC = () => {
           Cube length: {cubeLength} m
           <input
             type="range"
-            min="0.1"
+            min="1"
             max="10"
             step="0.1"
             value={cubeLength}
@@ -334,8 +244,8 @@ const CubeRenderer: React.FC = () => {
           <input
             type="range"
             min="0.01"
-            max="1"
-            step="0.01"
+            max="0.1"
+            step="0.001"
             value={timeStep}
             onChange={(e) => setTimeStep(Number(e.target.value))}
           />
@@ -390,6 +300,7 @@ const CubeRenderer: React.FC = () => {
           {isRunning ? "Stop Simulation" : "Start Simulation"}
         </button>
         <p>Time Elapsed: {timePassed.toFixed(1)} s </p>
+        <p>Middle Cube Temparature: {middleTemp.toFixed(2)}</p>
       </div>
       <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />
     </div>
