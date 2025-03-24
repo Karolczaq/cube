@@ -1,7 +1,6 @@
 # Simple thermal conductivity simulation
 *Made using Three.js* <br>
-The animation is smooth up to 6x6x6 cube. For the more discretized cube you can use the code in HeatSimulation.tsx to simulate it further, but without the animation, because it's unusable for those cubes.
-You can use mouse and scroll to move around and look inside the cube
+You can move around the cube using mouse and scroll.
 
 # Running it locally:
 1. pnpm install
