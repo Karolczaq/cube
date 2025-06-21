@@ -107,17 +107,25 @@ const CubeRenderer: React.FC = () => {
       material,
       renderedCubes ** 3
     );
+
+    const cubeDistances: number[] = [];
     let index = 0;
     for (let x = 0; x < renderedCubes; x++) {
       for (let y = 0; y < renderedCubes; y++) {
         for (let z = 0; z < renderedCubes; z++) {
           const matrix = new THREE.Matrix4();
-          matrix.setPosition(
-            x * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2,
-            y * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2,
-            z * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2
-          );
+          const posX =
+            x * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2;
+          const posY =
+            y * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2;
+          const posZ =
+            z * (cubeSize + gap) - ((cubeSize + gap) * (renderedCubes - 1)) / 2;
+
+          matrix.setPosition(posX, posY, posZ);
           instancedMesh.setMatrixAt(index, matrix);
+
+          const distanceSquared = posX * posX + posY * posY + posZ * posZ;
+          cubeDistances[index] = distanceSquared;
 
           const color = temperatureToColor(
             temperatureGrid[x + 1][y + 1][z + 1]
@@ -147,13 +155,22 @@ const CubeRenderer: React.FC = () => {
         return newTimePassed;
       });
       let index = 0;
+      const cameraDistance = camera.position.lengthSq();
+      console.log(cameraDistance);
       for (let x = 0; x < renderedCubes; x++) {
         for (let y = 0; y < renderedCubes; y++) {
           for (let z = 0; z < renderedCubes; z++) {
             const color = temperatureToColor(
               temperatureGrid[x + 1][y + 1][z + 1]
             );
-            instancedMesh.setColorAt(index, color);
+            const cubeDistance = cubeDistances[index];
+
+            if (cameraDistance < cubeDistance) {
+              color.setRGB(0, 0, 0);
+              color.multiplyScalar(0);
+            } else {
+              instancedMesh.setColorAt(index, color);
+            }
             index++;
           }
         }
@@ -223,7 +240,7 @@ const CubeRenderer: React.FC = () => {
           <input
             type="range"
             min="1"
-            max="30"
+            max="60"
             value={totalCubes - 2}
             onChange={(e) => setTotalCubes(Number(e.target.value) + 2)}
             disabled={isRunning}
