@@ -202,6 +202,7 @@ const CubeRenderer: React.FC = () => {
             max="100"
             value={initialCubeTemp}
             onChange={(e) => setInitialCubeTemp(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -213,6 +214,7 @@ const CubeRenderer: React.FC = () => {
             max="200"
             value={initialWaterTemp}
             onChange={(e) => setInitialWaterTemp(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -224,6 +226,7 @@ const CubeRenderer: React.FC = () => {
             max="30"
             value={totalCubes - 2}
             onChange={(e) => setTotalCubes(Number(e.target.value) + 2)}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -236,6 +239,7 @@ const CubeRenderer: React.FC = () => {
             step="0.1"
             value={cubeLength}
             onChange={(e) => setCubeLength(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -248,6 +252,7 @@ const CubeRenderer: React.FC = () => {
             step="0.001"
             value={timeStep}
             onChange={(e) => setTimeStep(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -260,6 +265,7 @@ const CubeRenderer: React.FC = () => {
             step="0.1"
             value={thermalConductivity}
             onChange={(e) => setThermalConductivity(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -272,6 +278,7 @@ const CubeRenderer: React.FC = () => {
             step="100"
             value={density}
             onChange={(e) => setDensity(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
@@ -284,6 +291,7 @@ const CubeRenderer: React.FC = () => {
             step="100"
             value={specificHeat}
             onChange={(e) => setSpecificHeat(Number(e.target.value))}
+            disabled={isRunning}
           />
         </label>
         <br />
