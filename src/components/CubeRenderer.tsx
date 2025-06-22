@@ -56,25 +56,6 @@ const CubeRenderer: React.FC = () => {
 
     console.log(alpha);
 
-    // const createTextTexture = (text: string) => {
-    //   const canvas = document.createElement("canvas");
-    //   const size = 256; // Canvas size for better resolution
-    //   canvas.width = size;
-    //   canvas.height = size;
-    //   const context = canvas.getContext("2d");
-
-    //   if (context) {
-    //     context.clearRect(0, 0, size, size);
-    //     context.fillStyle = "black";
-    //     context.font = "bold 48px Arial";
-    //     context.textAlign = "center";
-    //     context.textBaseline = "middle";
-    //     context.fillText(text, size / 2, size / 2);
-    //   }
-
-    //   return new THREE.CanvasTexture(canvas);
-    // };
-
     const temperatureToColor = (temp: number) => {
       const t = Math.min(Math.max(temp / 200, 0), 1);
       const r = t;
@@ -155,8 +136,9 @@ const CubeRenderer: React.FC = () => {
         return newTimePassed;
       });
       let index = 0;
-      const cameraDistance = camera.position.lengthSq();
+      const cameraDistance = camera.position.length();
       console.log(cameraDistance);
+      console.log(cubeDistances[1]);
       for (let x = 0; x < renderedCubes; x++) {
         for (let y = 0; y < renderedCubes; y++) {
           for (let z = 0; z < renderedCubes; z++) {
